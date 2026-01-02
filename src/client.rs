@@ -5,8 +5,9 @@ use crate::api::{
     bots::BotsApi, calls::CallsApi, chat::ChatApi, conversations::ConversationsApi,
     dialog::DialogApi, dnd::DndApi, emoji::EmojiApi, files::FilesApi, lists::ListsApi,
     oauth::OAuthApi, openid::OpenIDApi, pins::PinsApi, reactions::ReactionsApi,
-    reminders::RemindersApi, rtm::RtmApi, search::SearchApi, stars::StarsApi, team::TeamApi,
-    usergroups::UsergroupsApi, users::UsersApi, views::ViewsApi, workflows::WorkflowsApi,
+    reminders::RemindersApi, rtm::RtmApi, search::SearchApi, socket_mode::SocketModeApi,
+    stars::StarsApi, team::TeamApi, usergroups::UsergroupsApi, users::UsersApi, views::ViewsApi,
+    workflows::WorkflowsApi,
 };
 use crate::auth::AuthConfig;
 use crate::error::{Result, SlackError};
@@ -147,6 +148,15 @@ impl SlackClient {
     /// Provides methods for real-time messaging via WebSocket.
     pub fn rtm(&self) -> RtmApi {
         RtmApi::new(self.clone())
+    }
+
+    /// Get the Socket Mode API client
+    ///
+    /// Provides methods for receiving events via WebSocket using Socket Mode.
+    /// This is the modern alternative to RTM for receiving events.
+    /// Note: Requires an app-level token (xapp-...).
+    pub fn socket_mode(&self) -> SocketModeApi {
+        SocketModeApi::new(self.clone())
     }
 
     /// Get the Auth API client

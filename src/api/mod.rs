@@ -21,6 +21,7 @@ pub mod reactions;
 pub mod reminders;
 pub mod rtm;
 pub mod search;
+pub mod socket_mode;
 pub mod stars;
 pub mod team;
 pub mod usergroups;

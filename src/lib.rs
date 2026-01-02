@@ -94,6 +94,7 @@
 //! - [`api::reactions`] - Emoji reactions
 //! - [`api::reminders`] - Reminders
 //! - [`api::rtm`] - Real-time messaging via WebSocket
+//! - [`api::socket_mode`] - Socket Mode for receiving events via WebSocket
 //! - [`api::search`] - Message and file search
 //! - [`api::stars`] - Starred items
 //! - [`api::team`] - Team information
@@ -160,3 +161,10 @@ pub use blocks::{
     ActionsBlock, ButtonElement, ConfirmationDialog, ContextBlock, DividerBlock, HeaderBlock,
     ImageBlock, MessageBuilder, OptionObject, SectionBlock, SelectElement, TextObject,
 };
+
+// Re-export common types
+pub use types::{Channel, Message, MessageFile, ResponseMetadata, User};
+
+// Re-export common API request types
+pub use api::conversations::ConversationHistoryRequest;
+pub use api::users::UsersListRequest;
