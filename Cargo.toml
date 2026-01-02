@@ -1,0 +1,40 @@
+[package]
+name = "slacko"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.83"
+authors = ["Jimmy Stridh <opensource@stridh.nu>"]
+description = "Comprehensive Rust SDK for the Slack API with stealth mode support"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/jimmystridh/slacko"
+homepage = "https://github.com/jimmystridh/slacko"
+documentation = "https://docs.rs/slacko"
+keywords = ["slack", "api", "sdk", "chat", "messaging"]
+categories = ["api-bindings", "web-programming"]
+
+[lib]
+name = "slacko"
+path = "src/lib.rs"
+
+[[bin]]
+name = "slack-bot"
+path = "src/bin/bot.rs"
+
+[dependencies]
+tokio = { version = "1.42", features = ["full"] }
+reqwest = { version = "0.12", features = ["json", "multipart"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
+futures-util = "0.3"
+dotenv = "0.15"
+anyhow = "1.0"
+thiserror = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+chrono = { version = "0.4", features = ["serde"] }
+url = "2.5"
+
+[dev-dependencies]
+tokio-test = "0.4"

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Slack Token Extractor</title>
+  <style>
+    body {
+      width: 400px;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0 0 16px 0;
+      color: #1d1c1d;
+    }
+
+    .status {
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+
+    .status.success {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .status.error {
+      background-color: #ffebee;
+      color: #c62828;
+    }
+
+    .status.warning {
+      background-color: #fff3e0;
+      color: #e65100;
+    }
+
+    .token-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #616061;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .token-container {
+      display: flex;
+      gap: 8px;
+    }
+
+    input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      background-color: #f8f8f8;
+    }
+
+    button {
+      padding: 8px 12px;
+      background-color: #611f69;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: #4a154b;
+    }
+
+    button:active {
+      background-color: #350d36;
+    }
+
+    button.copied {
+      background-color: #2e7d32;
+    }
+
+    .refresh-btn {
+      width: 100%;
+      margin-top: 8px;
+      background-color: #007a5a;
+    }
+
+    .refresh-btn:hover {
+      background-color: #005a42;
+    }
+
+    .instructions {
+      margin-top: 16px;
+      padding: 12px;
+      background-color: #f8f8f8;
+      border-radius: 4px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #616061;
+    }
+
+    .instructions code {
+      background-color: #e8e8e8;
+      padding: 2px 4px;
+      border-radius: 2px;
+      font-family: monospace;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #616061;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 Slack Token Extractor</h1>
+
+  <div id="loading" class="loading">
+    Extracting tokens...
+  </div>
+
+  <div id="content" style="display: none;">
+    <div id="status" class="status"></div>
+
+    <div class="token-group">
+      <label>SLACK_XOXC_TOKEN</label>
+      <div class="token-container">
+        <input type="text" id="xoxc-token" readonly>
+        <button id="copy-xoxc">Copy</button>
+      </div>
+    </div>
+
+    <div class="token-group">
+      <label>SLACK_XOXD_COOKIE</label>
+      <div class="token-container">
+        <input type="text" id="xoxd-cookie" readonly>
+        <button id="copy-xoxd">Copy</button>
+      </div>
+    </div>
+
+    <button class="refresh-btn" id="refresh">🔄 Refresh Tokens</button>
+
+    <div class="instructions">
+      <strong>Usage:</strong><br>
+      1. Copy both tokens above<br>
+      2. Add to your <code>.env</code> file:<br>
+      <code>SLACK_XOXC_TOKEN=...</code><br>
+      <code>SLACK_XOXD_COOKIE=...</code><br>
+      3. Use with Slack SDK
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

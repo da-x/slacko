@@ -1,0 +1,29 @@
+//! Slack API endpoint modules
+
+pub mod admin;
+pub mod api_test;
+pub mod apps;
+pub mod auth;
+pub mod bookmarks;
+pub mod bots;
+pub mod calls;
+pub mod chat;
+pub mod conversations;
+pub mod dialog;
+pub mod dnd;
+pub mod emoji;
+pub mod files;
+pub mod lists;
+pub mod oauth;
+pub mod openid;
+pub mod pins;
+pub mod reactions;
+pub mod reminders;
+pub mod rtm;
+pub mod search;
+pub mod stars;
+pub mod team;
+pub mod usergroups;
+pub mod users;
+pub mod views;
+pub mod workflows;

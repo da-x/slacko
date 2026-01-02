@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="#611f69" rx="16"/>
+  <path d="M64 32 L64 52 L44 52 L44 32 Z" fill="#e01e5a"/>
+  <path d="M84 52 L84 72 L64 72 L64 52 Z" fill="#36c5f0"/>
+  <path d="M64 72 L64 92 L44 92 L44 72 Z" fill="#2eb67d"/>
+  <path d="M44 52 L44 72 L24 72 L24 52 Z" fill="#ecb22e"/>
+  <text x="64" y="110" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white" text-anchor="middle">TOKEN</text>
+</svg>
