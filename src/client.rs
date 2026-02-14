@@ -438,6 +438,139 @@ impl SlackClient {
             .data
             .ok_or_else(|| SlackError::api_error(method, "No data in response"))
     }
+
+    /// Make a POST request using multipart/form-data
+    /// This encodes each struct field as a separate form-data part
+    pub(crate) async fn post_multipart<T: serde::de::DeserializeOwned>(
+        &self,
+        method: &str,
+        params: &impl serde::Serialize,
+    ) -> Result<T> {
+        let url = format!("{}/{}", self.base_url, method);
+        let headers = self.auth.build_headers();
+
+        // Serialize struct to Value first, then convert to multipart form
+        let value = serde_json::to_value(params)?;
+        let form = self.build_multipart_form(&value)?;
+
+        let response = self
+            .http
+            .post(&url)
+            .headers(headers)
+            .multipart(form)
+            .send()
+            .await?;
+
+        // Check for rate limiting
+        if response.status().as_u16() == 429 {
+            let retry_after = response
+                .headers()
+                .get("retry-after")
+                .and_then(|v| v.to_str().ok())
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(60);
+
+            return Err(SlackError::RateLimitExceeded { retry_after });
+        }
+
+        let slack_response: SlackResponse<T> = response.json().await?;
+
+        if !slack_response.ok {
+            let error_msg = slack_response
+                .error
+                .unwrap_or_else(|| "Unknown error".to_string());
+            return Err(SlackError::api_error(method, error_msg));
+        }
+
+        slack_response
+            .data
+            .ok_or_else(|| SlackError::api_error(method, "No data in response"))
+    }
+
+    /// Build multipart form from JSON value using reqwest's Form
+    fn build_multipart_form(&self, value: &serde_json::Value) -> Result<reqwest::multipart::Form> {
+        use reqwest::multipart::Form;
+
+        let mut form = Form::new();
+
+        // Flatten the JSON object to handle nested structures
+        let flat_map = self.flatten_json_for_multipart(value, None)?;
+
+        for (key, val) in flat_map {
+            form = form.text(key, val);
+        }
+
+        Ok(form)
+    }
+
+    /// Flatten a JSON value into key-value pairs suitable for multipart form data
+    /// Handles nested objects and arrays by converting them to JSON strings
+    fn flatten_json_for_multipart(
+        &self,
+        value: &serde_json::Value,
+        prefix: Option<&str>,
+    ) -> Result<std::collections::HashMap<String, String>> {
+        let mut result = std::collections::HashMap::new();
+
+        match value {
+            serde_json::Value::Object(map) => {
+                for (key, val) in map {
+                    // Skip null values (same as serde skip_serializing_if)
+                    if val.is_null() {
+                        continue;
+                    }
+
+                    let full_key = match prefix {
+                        Some(p) => format!("{}[{}]", p, key),
+                        None => key.clone(),
+                    };
+
+                    match val {
+                        serde_json::Value::String(s) => {
+                            result.insert(full_key, s.clone());
+                        }
+                        serde_json::Value::Bool(b) => {
+                            result.insert(full_key, b.to_string());
+                        }
+                        serde_json::Value::Number(n) => {
+                            result.insert(full_key, n.to_string());
+                        }
+                        serde_json::Value::Array(_) | serde_json::Value::Object(_) => {
+                            // For complex structures, serialize as JSON string
+                            let json_str = serde_json::to_string(val).map_err(|e| {
+                                SlackError::config_error(format!(
+                                    "Failed to serialize complex value: {}",
+                                    e
+                                ))
+                            })?;
+                            result.insert(full_key, json_str);
+                        }
+                        serde_json::Value::Null => {
+                            // Skip null values
+                        }
+                    }
+                }
+            }
+            _ => {
+                // For non-object root values, use the prefix or default key
+                let key = prefix.unwrap_or("value").to_string();
+                let value_str = match value {
+                    serde_json::Value::String(s) => s.clone(),
+                    serde_json::Value::Bool(b) => b.to_string(),
+                    serde_json::Value::Number(n) => n.to_string(),
+                    serde_json::Value::Array(_) | serde_json::Value::Object(_) => {
+                        serde_json::to_string(value).map_err(|e| {
+                            SlackError::config_error(format!("Failed to serialize value: {}", e))
+                        })?
+                    }
+                    serde_json::Value::Null => return Ok(result), // Skip null values
+                };
+                result.insert(key, value_str);
+            }
+        }
+
+        Ok(result)
+    }
 }
 
 #[cfg(test)]

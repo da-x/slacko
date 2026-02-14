@@ -193,6 +193,23 @@ impl ConversationsApi {
         self.client.post("conversations.replies", &params).await
     }
 
+    /// Get replies to a thread using multipart/form-data encoding
+    ///
+    /// This method sends the request using multipart/form-data with WebKit-style boundaries,
+    /// encoding each struct field as a separate form part.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Request parameters that will be encoded as multipart form data
+    pub async fn replies_with_options_multipart(
+        &self,
+        params: ConversationRepliesRequest,
+    ) -> Result<ConversationRepliesResponse> {
+        self.client
+            .post_multipart("conversations.replies", &params)
+            .await
+    }
+
     /// Invite users to a conversation
     ///
     /// # Arguments
