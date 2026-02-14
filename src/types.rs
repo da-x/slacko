@@ -119,9 +119,14 @@ pub struct Message {
     pub bot_id: Option<String>,
     #[serde(default)]
     pub text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reply_count: Option<i64>,
+    #[serde(default)]
     pub ts: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thread_ts: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub latest_reply: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub channel: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -130,6 +135,14 @@ pub struct Message {
     pub reactions: Option<Vec<Reaction>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub files: Option<Vec<File>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub edited: Option<Edited>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Edited {
+    pub user: Option<String>,
+    pub ts: Option<String>,
 }
 
 /// Message attachment

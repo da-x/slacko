@@ -178,8 +178,18 @@ impl ConversationsApi {
             ts: ts.to_string(),
             limit: Some(100),
             cursor: None,
+            latest: None,
+            oldest: None,
+            inclusive: false,
         };
 
+        self.client.post("conversations.replies", &params).await
+    }
+
+    pub async fn replies_with_options(
+        &self,
+        params: ConversationRepliesRequest,
+    ) -> Result<ConversationRepliesResponse> {
         self.client.post("conversations.replies", &params).await
     }
 
@@ -699,6 +709,12 @@ pub struct ConversationRepliesRequest {
     pub limit: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cursor: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub latest: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub oldest: Option<String>,
+    #[serde(default)]
+    pub inclusive: bool,
 }
 
 #[derive(Debug, Deserialize)]
