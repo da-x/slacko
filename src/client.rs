@@ -1,13 +1,13 @@
 //! Core Slack API client
 
 use crate::api::{
-    admin::AdminApi, api_test::ApiApi, apps::AppsApi, auth::AuthApi, bookmarks::BookmarksApi,
-    bots::BotsApi, calls::CallsApi, chat::ChatApi, conversations::ConversationsApi,
-    dialog::DialogApi, dnd::DndApi, emoji::EmojiApi, files::FilesApi, lists::ListsApi,
-    oauth::OAuthApi, openid::OpenIDApi, pins::PinsApi, reactions::ReactionsApi,
-    reminders::RemindersApi, rtm::RtmApi, search::SearchApi, socket_mode::SocketModeApi,
-    stars::StarsApi, team::TeamApi, usergroups::UsergroupsApi, users::UsersApi, views::ViewsApi,
-    workflows::WorkflowsApi,
+    activity::ActivityApi, admin::AdminApi, api_test::ApiApi, apps::AppsApi, auth::AuthApi,
+    bookmarks::BookmarksApi, bots::BotsApi, calls::CallsApi, chat::ChatApi,
+    conversations::ConversationsApi, dialog::DialogApi, dnd::DndApi, emoji::EmojiApi,
+    files::FilesApi, lists::ListsApi, oauth::OAuthApi, openid::OpenIDApi, pins::PinsApi,
+    reactions::ReactionsApi, reminders::RemindersApi, rtm::RtmApi, search::SearchApi,
+    socket_mode::SocketModeApi, stars::StarsApi, team::TeamApi, usergroups::UsergroupsApi,
+    users::UsersApi, views::ViewsApi, workflows::WorkflowsApi,
 };
 use crate::auth::AuthConfig;
 use crate::error::{Result, SlackError};
@@ -78,6 +78,13 @@ impl SlackClient {
             auth: Arc::new(auth),
             base_url: SLACK_API_BASE.to_string(),
         })
+    }
+
+    /// Get the Activity API client
+    ///
+    /// Provides methods for accessing activity feed and notifications.
+    pub fn activity(&self) -> ActivityApi {
+        ActivityApi::new(self.clone())
     }
 
     /// Get the API test client
@@ -535,11 +542,25 @@ impl SlackClient {
                         serde_json::Value::Number(n) => {
                             result.insert(full_key, n.to_string());
                         }
-                        serde_json::Value::Array(_) | serde_json::Value::Object(_) => {
-                            // For complex structures, serialize as JSON string
+                        serde_json::Value::Array(arr) => {
+                            // For arrays, join with commas
+                            let string_values: Vec<String> = arr
+                                .iter()
+                                .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                                .collect();
+                            if string_values.len() == arr.len() {
+                                result.insert(full_key, string_values.join(","));
+                            } else {
+                                return Err(SlackError::config_error(
+                                    "Arrays must contain only strings for multipart encoding",
+                                ));
+                            }
+                        }
+                        serde_json::Value::Object(_) => {
+                            // For objects, serialize as JSON string
                             let json_str = serde_json::to_string(val).map_err(|e| {
                                 SlackError::config_error(format!(
-                                    "Failed to serialize complex value: {}",
+                                    "Failed to serialize object: {}",
                                     e
                                 ))
                             })?;
@@ -558,11 +579,23 @@ impl SlackClient {
                     serde_json::Value::String(s) => s.clone(),
                     serde_json::Value::Bool(b) => b.to_string(),
                     serde_json::Value::Number(n) => n.to_string(),
-                    serde_json::Value::Array(_) | serde_json::Value::Object(_) => {
-                        serde_json::to_string(value).map_err(|e| {
-                            SlackError::config_error(format!("Failed to serialize value: {}", e))
-                        })?
+                    serde_json::Value::Array(arr) => {
+                        // For arrays, join with commas
+                        let string_values: Vec<String> = arr
+                            .iter()
+                            .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                            .collect();
+                        if string_values.len() == arr.len() {
+                            string_values.join(",")
+                        } else {
+                            return Err(SlackError::config_error(
+                                "Arrays must contain only strings for multipart encoding",
+                            ));
+                        }
                     }
+                    serde_json::Value::Object(_) => serde_json::to_string(value).map_err(|e| {
+                        SlackError::config_error(format!("Failed to serialize value: {}", e))
+                    })?,
                     serde_json::Value::Null => return Ok(result), // Skip null values
                 };
                 result.insert(key, value_str);

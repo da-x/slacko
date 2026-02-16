@@ -1,5 +1,6 @@
 //! Slack API endpoint modules
 
+pub mod activity;
 pub mod admin;
 pub mod api_test;
 pub mod apps;
