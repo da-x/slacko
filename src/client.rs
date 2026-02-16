@@ -4,10 +4,10 @@ use crate::api::{
     activity::ActivityApi, admin::AdminApi, api_test::ApiApi, apps::AppsApi, auth::AuthApi,
     bookmarks::BookmarksApi, bots::BotsApi, calls::CallsApi, chat::ChatApi,
     conversations::ConversationsApi, dialog::DialogApi, dnd::DndApi, emoji::EmojiApi,
-    files::FilesApi, lists::ListsApi, oauth::OAuthApi, openid::OpenIDApi, pins::PinsApi,
-    reactions::ReactionsApi, reminders::RemindersApi, rtm::RtmApi, search::SearchApi,
-    socket_mode::SocketModeApi, stars::StarsApi, team::TeamApi, usergroups::UsergroupsApi,
-    users::UsersApi, views::ViewsApi, workflows::WorkflowsApi,
+    files::FilesApi, lists::ListsApi, messages::MessagesApi, oauth::OAuthApi, openid::OpenIDApi,
+    pins::PinsApi, reactions::ReactionsApi, reminders::RemindersApi, rtm::RtmApi,
+    search::SearchApi, socket_mode::SocketModeApi, stars::StarsApi, team::TeamApi,
+    usergroups::UsergroupsApi, users::UsersApi, views::ViewsApi, workflows::WorkflowsApi,
 };
 use crate::auth::AuthConfig;
 use crate::error::{Result, SlackError};
@@ -287,6 +287,13 @@ impl SlackClient {
         ListsApi::new(self.clone())
     }
 
+    /// Get the Messages API client
+    ///
+    /// Provides methods for managing messages.
+    pub fn messages(&self) -> MessagesApi {
+        MessagesApi::new(self.clone())
+    }
+
     /// Make a POST request to the Slack API
     pub(crate) async fn post<T: serde::de::DeserializeOwned>(
         &self,
@@ -494,6 +501,46 @@ impl SlackClient {
             .ok_or_else(|| SlackError::api_error(method, "No data in response"))
     }
 
+    /// Make a POST request using multipart/form-data
+    /// This encodes each struct field as a separate form-data part
+    pub(crate) async fn post_multipart_direct<T: serde::de::DeserializeOwned>(
+        &self,
+        method: &str,
+        params: &impl serde::Serialize,
+    ) -> Result<T> {
+        let url = format!("{}/{}", self.base_url, method);
+        let headers = self.auth.build_headers();
+
+        // Serialize struct to Value first, then convert to multipart form
+        let value = serde_json::to_value(params)?;
+        let form = self.build_multipart_form(&value)?;
+
+        let response = self
+            .http
+            .post(&url)
+            .headers(headers)
+            .multipart(form)
+            .send()
+            .await?;
+
+        // Check for rate limiting
+        if response.status().as_u16() == 429 {
+            let retry_after = response
+                .headers()
+                .get("retry-after")
+                .and_then(|v| v.to_str().ok())
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(60);
+
+            return Err(SlackError::RateLimitExceeded { retry_after });
+        }
+
+        let rsp: serde_json::Value = response.json().await?;
+        let rsp: T = serde_json::from_value(rsp)?;
+
+        Ok(rsp)
+    }
+
     /// Build multipart form from JSON value using reqwest's Form
     fn build_multipart_form(&self, value: &serde_json::Value) -> Result<reqwest::multipart::Form> {
         use reqwest::multipart::Form;
@@ -542,22 +589,8 @@ impl SlackClient {
                         serde_json::Value::Number(n) => {
                             result.insert(full_key, n.to_string());
                         }
-                        serde_json::Value::Array(arr) => {
-                            // For arrays, join with commas
-                            let string_values: Vec<String> = arr
-                                .iter()
-                                .filter_map(|v| v.as_str().map(|s| s.to_string()))
-                                .collect();
-                            if string_values.len() == arr.len() {
-                                result.insert(full_key, string_values.join(","));
-                            } else {
-                                return Err(SlackError::config_error(
-                                    "Arrays must contain only strings for multipart encoding",
-                                ));
-                            }
-                        }
-                        serde_json::Value::Object(_) => {
-                            // For objects, serialize as JSON string
+                        serde_json::Value::Array(_) | serde_json::Value::Object(_) => {
+                            // For objects, encode as JSON string
                             let json_str = serde_json::to_string(val).map_err(|e| {
                                 SlackError::config_error(format!(
                                     "Failed to serialize object: {}",

@@ -15,6 +15,7 @@ pub mod dnd;
 pub mod emoji;
 pub mod files;
 pub mod lists;
+pub mod messages;
 pub mod oauth;
 pub mod openid;
 pub mod pins;
